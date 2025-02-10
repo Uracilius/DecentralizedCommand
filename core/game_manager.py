@@ -33,6 +33,7 @@ class Button:
 
 
 class GameManager:
+    #fuck off
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
