@@ -2,12 +2,6 @@ import pygame
 import logging
 from entities.bullet import Bullet
 
-logging.basicConfig(
-    filename="combat_manager.log",
-    filemode="a",
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    level=logging.DEBUG
-)
 
 class CombatManager:
     def __init__(self):
