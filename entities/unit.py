@@ -8,13 +8,7 @@ class Unit(pygame.sprite.Sprite):
         
         self.tile_size = 50  # Keep a standard size
 
-        # Load and scale the original sprite
-        self.original_image = pygame.image.load("assets/sprites/soldiers_enemy.png").convert_alpha()
-        self.original_image = pygame.transform.scale(self.original_image, (self.tile_size, self.tile_size))  
-
-        # Ensure self.image starts as the scaled image
-        self.image = self.original_image.copy()
-
+        
 
         self.direction = pygame.Vector2(0, -1)  
         
@@ -28,6 +22,18 @@ class Unit(pygame.sprite.Sprite):
         self.position = pygame.math.Vector2(x, y)
         self.health = health
         self.team = team
+
+        # Load and scale the original sprite based on team
+        if team.name == "Allies":
+            self.original_image = pygame.image.load("assets/sprites/soldiers_ally.png").convert_alpha()
+        else:
+            self.original_image = pygame.image.load("assets/sprites/soldiers_enemy.png").convert_alpha()
+            
+        self.original_image = pygame.transform.scale(self.original_image, (self.tile_size, self.tile_size))  
+
+        # Ensure self.image starts as the scaled image
+        self.image = self.original_image.copy()
+
         self.selected = False
         self.path = []
         
