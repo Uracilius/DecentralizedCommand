@@ -3,12 +3,13 @@ from entities.unit import Unit
 from entities.team import Team
 from entities.obstacle import Obstacle
 from entities import weapon
-
+from entities.obstacle import HardObstacle
 class MapManager:
     def __init__(self, map_file, tile_size=50):
         self.map_file = map_file
         self.tile_size = tile_size
-
+        
+        self._hard_obstacles = []
         self._obstacles = []
         self._units = []
         self._teams = []
@@ -50,6 +51,8 @@ class MapManager:
                     unit = Unit(position[0], position[1], enemy_team, health=100, weapon=weapon)
                     enemy_team.add_unit(unit)
                     self._units.append(unit)
+                elif char == "X":
+                    self._hard_obstacles.append(HardObstacle(position))
 
     def get_map_dimensions(self):
         return self.map_width, self.map_height
@@ -71,6 +74,10 @@ class MapManager:
     def get_obstacles(self):
         """Return the list of obstacles."""
         return self._obstacles
+    
+    def get_hard_obstacles(self):
+        """Return the list of obstacles."""
+        return self._hard_obstacles
 
     def get_units(self):
         """Return the list of units."""

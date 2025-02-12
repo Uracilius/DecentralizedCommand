@@ -2,7 +2,7 @@ import heapq
 import pygame
 import math
 
-def astar_pathfinding(start, end, obstacles, units, tile_size, map_width, map_height):
+def astar_pathfinding(start, end, obstacles, hard_obstacles, units, tile_size, map_width, map_height):
     start_tile = (start[0] // tile_size, start[1] // tile_size)
     end_tile = (end[0] // tile_size, end[1] // tile_size)
 
@@ -16,7 +16,9 @@ def astar_pathfinding(start, end, obstacles, units, tile_size, map_width, map_he
     def is_valid_tile(tile):
         x, y = tile
         rect = pygame.Rect(x * tile_size, y * tile_size, tile_size, tile_size)
-        if any(rect.colliderect(obs) for obs in obstacles): 
+        if any(rect.colliderect(obs) for obs in obstacles):
+            return False
+        if any(rect.colliderect(hard_obs) for hard_obs in hard_obstacles):
             return False
         if any(rect.colliderect(unit.rect) for unit in units if unit.alive()):
             return False

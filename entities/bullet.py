@@ -2,7 +2,7 @@ import pygame
 import random
 
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, start_pos, attacker, target_unit, speed=5, color=(255, 255, 0), radius=5, accuracy=80, enemies=[]):
+    def __init__(self, start_pos, attacker, target_unit, speed=5, color=(255, 255, 0), radius=5, accuracy=80, enemies=[], hard_obstacles=[]):
         super().__init__()
         self.image = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
         pygame.draw.circle(self.image, color, (radius, radius), radius)
@@ -11,6 +11,7 @@ class Bullet(pygame.sprite.Sprite):
         self.position = pygame.math.Vector2(start_pos)
         self.target_unit = target_unit
         self.accuracy = accuracy  # Store accuracy for offset calculations
+        self.hard_obstacles = hard_obstacles  # Store hard obstacles
 
         if target_unit:
             self.target_pos = pygame.math.Vector2(target_unit.rect.center)
@@ -54,7 +55,13 @@ class Bullet(pygame.sprite.Sprite):
                 if enemy.health > 0:
                     enemy.take_damage(self.damage, self.position)
                 self.kill()
-                break  # Exit the loop after collision
+                return  # Exit after collision
+
+        # Collision check with hard obstacles
+        for obstacle in self.hard_obstacles:
+            if pygame.sprite.collide_rect(self, obstacle):
+                self.kill()  # Bullet gets destroyed if it hits a hard obstacle
+                return
 
         self.lifespan -= 1
         if self.lifespan <= 0:

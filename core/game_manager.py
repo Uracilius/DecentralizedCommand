@@ -78,6 +78,7 @@ class GameManager:
         self.teams = self.map_manager.get_teams()
         self.units = self.map_manager.get_units()
         self.obstacles = self.map_manager.get_obstacles()
+        self.hard_obstacles = self.map_manager.get_hard_obstacles()
 
         self.combat_manager = CombatManager()
 
@@ -161,6 +162,7 @@ class GameManager:
                                 start=unit.rect.center,
                                 end=world_pos,
                                 obstacles=self.obstacles,
+                                hard_obstacles=self.hard_obstacles,
                                 tile_size=self.tile_size,
                                 map_width=self.real_map_width,
                                 map_height=self.real_map_height,
@@ -188,7 +190,7 @@ class GameManager:
 
     def update_game(self):
         """Update game logic (combat, unit removal, etc.)"""
-        self.combat_manager.handle_combat(self.units, self.obstacles)
+        self.combat_manager.handle_combat(self.units, self.obstacles, self.hard_obstacles)
         self.units = [u for u in self.units if u.health > 0]
 
     def render_menu(self):
@@ -202,7 +204,7 @@ class GameManager:
         """Render the gameplay screen."""
         self.screen.fill(COLORS["black"])
         self.renderer.render_ground(SCREEN_WIDTH, SCREEN_HEIGHT, COLORS)
-        self.renderer.render_map(self.obstacles, COLORS)
+        self.renderer.render_map(self.obstacles, self.hard_obstacles, COLORS)
         self.renderer.render_units(self.units, COLORS)
         self.renderer.render_bullets(self.combat_manager)
 

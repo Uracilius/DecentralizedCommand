@@ -26,7 +26,7 @@ class CombatManager:
             logging.error(f"Error loading sound {file_path}: {e}")
             return None
 
-    def handle_combat(self, units, obstacles):
+    def handle_combat(self, units, obstacles, hard_obstacles):
         """ Update unit combat logic and manage bullet spawning. """
         logging.debug("Handling combat...")
 
@@ -40,11 +40,11 @@ class CombatManager:
             logging.debug(f"Processing unit {unit.team.name} at {unit.rect.topleft} (HP: {unit.health})")
 
             enemies = [e for t, group in team_units.items() if t != unit.team for e in group]
-            unit.update(enemies, obstacles, units)
+            unit.update(enemies, obstacles, hard_obstacles, units)
 
             for enemy in enemies:
                 if enemy.health > 0 and self.is_in_range(unit, enemy) and unit.cooldown_timer <= 0:
-                    self.spawn_bullet(unit, enemy, enemies)
+                    self.spawn_bullet(unit, enemy, enemies, hard_obstacles)
                     unit.cooldown_timer = unit.weapon.fire_rate
 
         self.update_bullets()  # Process scheduled bullets
@@ -55,14 +55,14 @@ class CombatManager:
         distance = pygame.math.Vector2(unit.rect.center).distance_to(enemy.rect.center)
         return distance <= unit.weapon.range
 
-    def spawn_bullet(self, attacker, target, enemies):
+    def spawn_bullet(self, attacker, target, enemies, hard_obstacles):
         start_time = pygame.time.get_ticks()
         bullets_per_volley = attacker.weapon.bullets_per_volley
         delay_per_bullet = 50  # 50 ms between each bullet (adjustable)
 
         for i in range(bullets_per_volley):
             fire_time = start_time + (i * delay_per_bullet)
-            self.scheduled_bullets.append((fire_time, attacker, target, enemies))  # Pass enemies here
+            self.scheduled_bullets.append((fire_time, attacker, target, enemies, hard_obstacles))
 
         logging.info(f"{bullets_per_volley} bullets scheduled from {attacker.rect.center} to {target.rect.center}")
 
@@ -71,14 +71,14 @@ class CombatManager:
         current_time = pygame.time.get_ticks()
         bullets_to_spawn = [b for b in self.scheduled_bullets if current_time >= b[0]]
 
-        for fire_time, attacker, target, enemies in bullets_to_spawn: 
+        for fire_time, attacker, target, enemies, hard_obstacles in bullets_to_spawn:
             if self.fire_sound:
                 self.fire_sound.play()
 
-            bullet = Bullet(start_pos=attacker.rect.center, target_unit=target, attacker=attacker, enemies=enemies)
+            bullet = Bullet(start_pos=attacker.rect.center, target_unit=target, attacker=attacker, enemies=enemies, hard_obstacles=hard_obstacles)
             self.bullets.add(bullet)
 
-            self.scheduled_bullets.remove((fire_time, attacker, target, enemies))  
+            self.scheduled_bullets.remove((fire_time, attacker, target, enemies, hard_obstacles))
 
     def render_bullets(self, screen, camera):
         """ Render bullets on screen. """
