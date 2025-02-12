@@ -35,9 +35,7 @@ class Button:
             if self.is_hovered(event.pos):
                 self.callback()
 
-
 class GameManager:
-    #fuck off
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
@@ -59,8 +57,16 @@ class GameManager:
             (SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + 10),
             (button_width, button_height)
         )
+        restart_button_rect = pygame.Rect(
+            (SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + 70),
+            (button_width, button_height)
+        )
         self.menu_buttons = [
             Button(start_button_rect, "Start", self.start_game, self.menu_font, COLORS["black"], COLORS["white"]),
+            Button(exit_button_rect, "Exit", self.exit_game, self.menu_font, COLORS["black"], COLORS["white"])
+        ]
+        self.game_over_buttons = [
+            Button(restart_button_rect, "Restart", self.restart_game, self.menu_font, COLORS["black"], COLORS["white"]),
             Button(exit_button_rect, "Exit", self.exit_game, self.menu_font, COLORS["black"], COLORS["white"])
         ]
 
@@ -82,7 +88,7 @@ class GameManager:
         self.teams = self.map_manager.get_teams()
         self.units = self.map_manager.get_units()
         self.obstacles = self.map_manager.get_obstacles()
-        self.hard_obstacles = self.map_manager.get_hard_obstacles()
+        self.hard_obstacles = []  # Initialize hard obstacles list
         self.flags = self.map_manager.get_flags()  # Get flags from map manager
 
         self.combat_manager = CombatManager()
@@ -112,11 +118,19 @@ class GameManager:
 
     def start_game(self):
         """Callback for the Start button; switch to game state."""
+        print("Starting game...")
         self.state = "GAME"
         self.play_combat_music()
 
+    def restart_game(self):
+        """Callback for the Restart button; restart the game."""
+        print("Restarting game...")
+        self.__init__()
+        self.start_game()
+
     def exit_game(self):
         """Callback for the Exit button; quit the game."""
+        print("Exiting game...")
         self.running = False
 
     def handle_menu_events(self, events):
@@ -125,6 +139,14 @@ class GameManager:
             if event.type == pygame.QUIT:
                 self.running = False
             for button in self.menu_buttons:
+                button.handle_event(event)
+
+    def handle_game_over_events(self, events):
+        """Process events when the game is over."""
+        for event in events:
+            if event.type == pygame.QUIT:
+                self.running = False
+            for button in self.game_over_buttons:
                 button.handle_event(event)
 
     def handle_game_events(self, events):
@@ -198,7 +220,7 @@ class GameManager:
             self.camera.move(self.camera.scroll_speed, 0)
 
     def update_game(self):
-        """Update game logic (combat, unit removal, etc.)"""
+        """Update game logic (combat, unit removal, flag capture, etc.)"""
         self.combat_manager.handle_combat(self.units, self.obstacles, self.hard_obstacles)
         self.units = [u for u in self.units if u.health > 0]
 
@@ -208,6 +230,14 @@ class GameManager:
                 for unit in self.units:
                     if unit.team.name == "Allies" and flag.rect.colliderect(unit.rect):
                         flag.capture(unit.team, self.player)
+
+        # Check for win condition
+        if all(flag.is_captured() for flag in self.flags):
+            self.state = "WIN"
+
+        # Check for lose condition
+        if not any(unit.team.name == "Allies" for unit in self.units):
+            self.state = "GAME_OVER"
 
     def render_menu(self):
         """Render the menu screen."""
@@ -220,7 +250,7 @@ class GameManager:
         """Render the gameplay screen."""
         self.screen.fill(COLORS["black"])
         self.renderer.render_ground(SCREEN_WIDTH, SCREEN_HEIGHT, COLORS)
-        self.renderer.render_map(self.obstacles, self.hard_obstacles, COLORS)
+        self.renderer.render_map(self.obstacles, COLORS)
         self.renderer.render_units(self.units, COLORS)
         self.renderer.render_bullets(self.combat_manager)
         self.renderer.render_flags(self.flags)  # Render flags
@@ -235,6 +265,28 @@ class GameManager:
         if self.dragging:
             pygame.draw.rect(self.screen, COLORS["white"], self.selection_rect, 1)
 
+        pygame.display.flip()
+
+    def render_game_over(self):
+        """Render the game over screen."""
+        self.screen.fill(COLORS["black"])
+        font = pygame.font.Font(None, 72)
+        text_surface = font.render("GAME OVER", True, COLORS["red"])
+        text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        self.screen.blit(text_surface, text_rect)
+        for button in self.game_over_buttons:
+            button.draw(self.screen)
+        pygame.display.flip()
+
+    def render_win(self):
+        """Render the win screen."""
+        self.screen.fill(COLORS["black"])
+        font = pygame.font.Font(None, 72)
+        text_surface = font.render("YOU WIN", True, COLORS["green"])
+        text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        self.screen.blit(text_surface, text_rect)
+        for button in self.game_over_buttons:
+            button.draw(self.screen)
         pygame.display.flip()
 
     def debug_teams_and_units(self):
@@ -259,6 +311,12 @@ class GameManager:
                 self.handle_game_events(events)
                 self.update_game()
                 self.render_game()
+            elif self.state == "GAME_OVER":
+                self.handle_game_over_events(events)
+                self.render_game_over()
+            elif self.state == "WIN":
+                self.handle_game_over_events(events)
+                self.render_win()
 
             self.clock.tick(FPS)
 
