@@ -198,8 +198,6 @@ class GameManager:
             self.camera.move(self.camera.scroll_speed, 0)
 
     def update_game(self):
-        """Update game logic (combat, unit removal, flag capture, etc.)"""
-        self.combat_manager.handle_combat(self.units, self.obstacles)
         """Update game logic (combat, unit removal, etc.)"""
         self.combat_manager.handle_combat(self.units, self.obstacles, self.hard_obstacles)
         self.units = [u for u in self.units if u.health > 0]
