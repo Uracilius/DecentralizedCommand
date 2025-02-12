@@ -35,9 +35,7 @@ class Button:
             if self.is_hovered(event.pos):
                 self.callback()
 
-
 class GameManager:
-    #fuck off
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
@@ -47,21 +45,22 @@ class GameManager:
         self.running = True
 
         self.state = "MENU"
+        self.difficulty_modifier = 1.0  # Default difficulty
 
         self.menu_font = pygame.font.Font(None, 36)
         button_width = 200
         button_height = 50
-        start_button_rect = pygame.Rect(
-            (SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 - button_height - 10),
-            (button_width, button_height)
-        )
-        exit_button_rect = pygame.Rect(
-            (SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + 10),
-            (button_width, button_height)
-        )
+        start_button_rect = pygame.Rect((SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 - button_height - 10), (button_width, button_height))
+        exit_button_rect = pygame.Rect((SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + 10), (button_width, button_height))
         self.menu_buttons = [
-            Button(start_button_rect, "Start", self.start_game, self.menu_font, COLORS["black"], COLORS["white"]),
+            Button(start_button_rect, "Start", self.show_difficulty_selection, self.menu_font, COLORS["black"], COLORS["white"]),
             Button(exit_button_rect, "Exit", self.exit_game, self.menu_font, COLORS["black"], COLORS["white"])
+        ]
+
+        self.difficulty_buttons = [
+            Button((SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 60, 200, 50), "Easy", lambda: self.set_difficulty(0.5), self.menu_font, COLORS["black"], COLORS["white"]),
+            Button((SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2, 200, 50), "Normal", lambda: self.set_difficulty(1.0), self.menu_font, COLORS["black"], COLORS["white"]),
+            Button((SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 60, 200, 50), "Hard", lambda: self.set_difficulty(2.0), self.menu_font, COLORS["black"], COLORS["white"])
         ]
 
         self.tile_size = 50
@@ -74,59 +73,15 @@ class GameManager:
         self.real_map_width = map_width * self.tile_size
         self.real_map_height = map_height * self.tile_size
 
-        self.camera = Camera(SCREEN_WIDTH, SCREEN_HEIGHT,
-                             self.real_map_width, self.real_map_height,
-                             self.tile_size)
+        self.camera = Camera(SCREEN_WIDTH, SCREEN_HEIGHT, self.real_map_width, self.real_map_height, self.tile_size)
         self.renderer = Renderer(self.screen, self.tile_size, self.camera)
-
-        self.teams = self.map_manager.get_teams()
-        self.units = self.map_manager.get_units()
-        self.obstacles = self.map_manager.get_obstacles()
-        self.hard_obstacles = self.map_manager.get_hard_obstacles()
-        self.flags = self.map_manager.get_flags()  # Get flags from map manager
-
         self.combat_manager = CombatManager()
+        self.player = Player()
 
-        self.debug_teams_and_units()
-
-        # Load and play menu music
         self.menu_music = pygame.mixer.Sound("assets/music/main_menu_music_1.mp3")
         self.combat_music = pygame.mixer.Sound("assets/music/combat.mp3")
         self.play_menu_music()
-
-        self.player = Player()  # Initialize player with score
-        self.flags = self.map_manager.get_flags()  # Get flags from map manager
-        print(f"Flags loaded: {self.flags}")  # Debugging print statement
-
-    def play_menu_music(self):
-        """Play the menu music."""
-        menu_music_files = ["assets/music/main_menu_music_1.mp3", "assets/music/main_menu_music_2.mp3"]
-        selected_music = random.choice(menu_music_files)
-        pygame.mixer.music.load(selected_music)
-        pygame.mixer.music.play(-1)
-
-    def play_combat_music(self):
-        """Play the combat music."""
-        pygame.mixer.music.load("assets/music/combat.mp3")
-        pygame.mixer.music.play(-1)
-
-    def start_game(self):
-        """Callback for the Start button; switch to game state."""
-        self.state = "GAME"
-        self.play_combat_music()
-
-    def exit_game(self):
-        """Callback for the Exit button; quit the game."""
-        self.running = False
-
-    def handle_menu_events(self, events):
-        """Process events when the menu is active."""
-        for event in events:
-            if event.type == pygame.QUIT:
-                self.running = False
-            for button in self.menu_buttons:
-                button.handle_event(event)
-
+    
     def handle_game_events(self, events):
         """Process events during gameplay."""
         mouse_pos = pygame.mouse.get_pos()
@@ -186,7 +141,6 @@ class GameManager:
                     self.selection_rect.width = current_mouse_pos[0] - self.start_drag_pos[0]
                     self.selection_rect.height = current_mouse_pos[1] - self.start_drag_pos[1]
 
-        # Also check continuous key presses for camera movement.
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w]:
             self.camera.move(0, -self.camera.scroll_speed)
@@ -209,10 +163,61 @@ class GameManager:
                     if unit.team.name == "Allies" and flag.rect.colliderect(unit.rect):
                         flag.capture(unit.team, self.player)
 
+
+    def play_menu_music(self):
+        pygame.mixer.music.load("assets/music/main_menu_music_1.mp3")
+        pygame.mixer.music.play(-1)
+
+    def play_combat_music(self):
+        pygame.mixer.music.load("assets/music/combat.mp3")
+        pygame.mixer.music.play(-1)
+
+    def show_difficulty_selection(self):
+        self.state = "DIFFICULTY_SELECTION"
+
+    def set_difficulty(self, modifier):
+        self.difficulty_modifier = modifier
+        self.start_game()
+
+    def start_game(self):
+        self.state = "GAME"
+        self.play_combat_music()
+        self.teams = self.map_manager.get_teams()
+        self.units = self.map_manager.get_units()
+        self.obstacles = self.map_manager.get_obstacles()
+        self.hard_obstacles = self.map_manager.get_hard_obstacles()
+        self.flags = self.map_manager.get_flags()
+        
+        for unit in self.units:
+            unit.set_difficulty_multiplier(self.difficulty_modifier)
+        self.combat_manager.set_difficulty_multiplier(self.difficulty_modifier)
+
+    def exit_game(self):
+        self.running = False
+
+    def handle_menu_events(self, events):
+        for event in events:
+            if event.type == pygame.QUIT:
+                self.running = False
+            for button in self.menu_buttons:
+                button.handle_event(event)
+
+    def handle_difficulty_events(self, events):
+        for event in events:
+            if event.type == pygame.QUIT:
+                self.running = False
+            for button in self.difficulty_buttons:
+                button.handle_event(event)
+
     def render_menu(self):
-        """Render the menu screen."""
-        self.screen.fill(COLORS["white"])  # Set background color to white
+        self.screen.fill(COLORS["white"])
         for button in self.menu_buttons:
+            button.draw(self.screen)
+        pygame.display.flip()
+
+    def render_difficulty_selection(self):
+        self.screen.fill(COLORS["white"])
+        for button in self.difficulty_buttons:
             button.draw(self.screen)
         pygame.display.flip()
 
@@ -223,15 +228,13 @@ class GameManager:
         self.renderer.render_map(self.obstacles, self.hard_obstacles, COLORS)
         self.renderer.render_units(self.units, COLORS)
         self.renderer.render_bullets(self.combat_manager)
-        self.renderer.render_flags(self.flags)  # Render flags
+        self.renderer.render_flags(self.flags)
 
-        # Display the mouse coordinates for debugging.
         mouse_pos = pygame.mouse.get_pos()
         font = pygame.font.Font(None, 24)
         text_surface = font.render(f"{mouse_pos}", True, COLORS["white"])
         self.screen.blit(text_surface, (mouse_pos[0] + 10, mouse_pos[1] + 10))
 
-        # Optionally draw the selection rectangle while dragging.
         if self.dragging:
             pygame.draw.rect(self.screen, COLORS["white"], self.selection_rect, 1)
 
@@ -243,11 +246,10 @@ class GameManager:
             for unit in team.units:
                 logging.debug(f"  Unit at {unit.position}, Health: {unit.health}, Weapon: {unit.weapon.__str__()}")
 
+
     def run(self):
         while self.running:
-            # Poll events only once per frame
             events = pygame.event.get()
-            # Always check for QUIT events
             for event in events:
                 if event.type == pygame.QUIT:
                     self.running = False
@@ -255,6 +257,9 @@ class GameManager:
             if self.state == "MENU":
                 self.handle_menu_events(events)
                 self.render_menu()
+            elif self.state == "DIFFICULTY_SELECTION":
+                self.handle_difficulty_events(events)
+                self.render_difficulty_selection()
             elif self.state == "GAME":
                 self.handle_game_events(events)
                 self.update_game()
@@ -263,7 +268,6 @@ class GameManager:
             self.clock.tick(FPS)
 
         pygame.quit()
-
 
 if __name__ == "__main__":
     game_manager = GameManager()

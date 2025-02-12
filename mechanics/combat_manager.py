@@ -4,7 +4,10 @@ from entities.bullet import Bullet
 
 
 class CombatManager:
+
+    
     def __init__(self):
+        self.difficulty_multiplier = 1.0
         self.bullets = pygame.sprite.Group()
         self.scheduled_bullets = []
 
@@ -75,7 +78,7 @@ class CombatManager:
             if self.fire_sound:
                 self.fire_sound.play()
 
-            bullet = Bullet(start_pos=attacker.rect.center, target_unit=target, attacker=attacker, enemies=enemies, hard_obstacles=hard_obstacles)
+            bullet = Bullet(start_pos=attacker.rect.center, target_unit=target, attacker=attacker, enemies=enemies, hard_obstacles=hard_obstacles, difficulty_modifier=self.difficulty_multiplier)
             self.bullets.add(bullet)
 
             self.scheduled_bullets.remove((fire_time, attacker, target, enemies, hard_obstacles))
@@ -85,3 +88,7 @@ class CombatManager:
         for bullet in self.bullets:
             position = camera.apply(bullet.rect.center)
             pygame.draw.circle(screen, bullet.color, (int(position[0]), int(position[1])), bullet.radius)
+
+    def set_difficulty_multiplier(self, multiplier):
+        self.difficulty_multiplier = multiplier
+        logging.info(f"Difficulty multiplier set to {multiplier}.")
