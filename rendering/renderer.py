@@ -6,7 +6,7 @@ class Renderer:
         self.tile_size = tile_size
         self.camera = camera
 
-    def render_map(self, obstacles, colors):
+    def render_map(self, obstacles, hard_obstacles, colors):
         for obstacle in obstacles:
             position = self.camera.apply(obstacle.position)
             pygame.draw.rect(
@@ -16,11 +16,18 @@ class Renderer:
             )
             pygame.draw.rect(
                 self.screen,
-                (100, 50, 0),  # Highlight for cover
+                (100, 50, 0),
                 (position[0], position[1], self.tile_size, self.tile_size),
                 3
             )
-
+        for hard_obstacle in hard_obstacles:
+            position = self.camera.apply(hard_obstacle.position)
+            pygame.draw.rect(
+                self.screen,
+                (0, 0, 0),
+                (position[0], position[1], self.tile_size, self.tile_size)
+            )
+            
     def render_bullets(self, combat_manager):
         """Render all bullets managed by the CombatManager."""
         combat_manager.render_bullets(self.screen, self.camera)
