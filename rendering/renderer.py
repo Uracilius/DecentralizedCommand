@@ -5,28 +5,18 @@ class Renderer:
         self.screen = screen
         self.tile_size = tile_size
         self.camera = camera
+        self.obstacle_sprite = pygame.image.load('assets/sprites/obstacle.png')
+        self.hard_obstacle_sprite = pygame.image.load('assets/sprites/hard_obstacle.png')
+        self.obstacle_sprite = pygame.transform.scale(self.obstacle_sprite, (tile_size, tile_size))
+        self.hard_obstacle_sprite = pygame.transform.scale(self.hard_obstacle_sprite, (tile_size, tile_size))
 
     def render_map(self, obstacles, hard_obstacles, colors):
         for obstacle in obstacles:
             position = self.camera.apply(obstacle.position)
-            pygame.draw.rect(
-                self.screen,
-                colors["brown"],
-                (position[0], position[1], self.tile_size, self.tile_size)
-            )
-            pygame.draw.rect(
-                self.screen,
-                (100, 50, 0),
-                (position[0], position[1], self.tile_size, self.tile_size),
-                3
-            )
+            self.screen.blit(self.obstacle_sprite, position)
         for hard_obstacle in hard_obstacles:
             position = self.camera.apply(hard_obstacle.position)
-            pygame.draw.rect(
-                self.screen,
-                (0, 0, 0),
-                (position[0], position[1], self.tile_size, self.tile_size)
-            )
+            self.screen.blit(self.hard_obstacle_sprite, position)
             
     def render_bullets(self, combat_manager):
         """Render all bullets managed by the CombatManager."""
@@ -94,4 +84,3 @@ class Renderer:
         """Render flags on the map."""
         for flag in flags:
             flag.render(self.screen, self.camera)
-

@@ -191,7 +191,7 @@ class Unit(pygame.sprite.Sprite):
         self.move_towards_next_tile()
 
         # Rotate sprite based on movement direction
-        angle = -self.direction.angle_to(pygame.Vector2(0, 1))  
+        angle = -self.direction.angle_to(pygame.Vector2(0, -1))  
         rotated_image = pygame.transform.rotate(self.original_image, angle)
         self.rect = rotated_image.get_rect(center=self.rect.center)  # Maintain center
         self.image = rotated_image
