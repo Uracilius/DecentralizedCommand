@@ -74,7 +74,7 @@ class Unit(pygame.sprite.Sprite):
                 self.position += direction
             self.rect.topleft = (round(self.position.x), round(self.position.y))
 
-    def search_and_destroy(self, enemies, obstacles, all_units):
+    def search_and_destroy(self, enemies, obstacles, hard_obstacles, all_units):
         """ Make unit move towards the nearest enemy if it's outranged, but stop jittering. """
         if self.search_timer > 0:
             self.search_timer -= 1
@@ -96,6 +96,7 @@ class Unit(pygame.sprite.Sprite):
             start=self.rect.center,
             end=stop_position,
             obstacles=obstacles,
+            hard_obstacles=hard_obstacles,
             units=all_units,
             tile_size=self.tile_size,
             map_width=self.tile_size * 20,
@@ -112,7 +113,7 @@ class Unit(pygame.sprite.Sprite):
 
 
     @staticmethod
-    def move_in_formation(units, leader, destination, formation="line", spacing=50):
+    def move_in_formation(units, leader, destination, hard_obstacles, formation="line", spacing=50):
         formation_offsets = []
         if formation == "line":
             formation_offsets = [(i * spacing, 0) for i in range(len(units))]
@@ -125,6 +126,7 @@ class Unit(pygame.sprite.Sprite):
             start=leader.rect.center,
             end=destination,
             obstacles=[],
+            hard_obstacles=hard_obstacles,
             tile_size=leader.tile_size,
             map_width=leader.tile_size * 20,
             map_height=leader.tile_size * 20
@@ -137,13 +139,14 @@ class Unit(pygame.sprite.Sprite):
                     start=unit.rect.center,
                     end=target_position,
                     obstacles=[],
+                    hard_obstacles=hard_obstacles,
                     tile_size=unit.tile_size,
                     map_width=unit.tile_size * 20,
                     map_height=unit.tile_size * 20
                 )
                 unit.set_path(path)
 
-    def update(self, enemies, obstacles, units):
+    def update(self, enemies, obstacles, hard_obstacles, units):
         """ Update movement, combat logic, and AI behavior. """
         if self.cooldown_timer > 0:
             self.cooldown_timer -= 1
@@ -152,7 +155,7 @@ class Unit(pygame.sprite.Sprite):
             self.move_towards_next_tile()
             self.check_cover(obstacles)
         else:
-            self.search_and_destroy(enemies, obstacles, units)
+            self.search_and_destroy(enemies, obstacles, hard_obstacles=hard_obstacles, all_units=units)
 
         self.move_towards_next_tile()
 
