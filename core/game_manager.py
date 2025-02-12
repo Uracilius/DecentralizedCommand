@@ -220,18 +220,26 @@ class GameManager:
             self.camera.move(-self.camera.scroll_speed, 0)
         if keys[pygame.K_d]:
             self.camera.move(self.camera.scroll_speed, 0)
-
+    
     def update_game(self):
-        """Update game logic (combat, unit removal, flag capture, etc.)"""
-        self.combat_manager.handle_combat(self.units, self.obstacles, self.hard_obstacles)
-        self.units = [u for u in self.units if u.health > 0]
+            """Update game logic (combat, unit removal, flag capture, etc.)"""
+            self.combat_manager.handle_combat(self.units, self.obstacles, self.hard_obstacles)
+            self.units = [u for u in self.units if u.health > 0]
 
-        # Check for flag captures
-        for flag in self.flags:
-            if not flag.is_captured():
-                for unit in self.units:
-                    if unit.team.name == "Allies" and flag.rect.colliderect(unit.rect):
-                        flag.capture(unit.team, self.player)
+            # Check for flag captures
+            for flag in self.flags:
+                if not flag.is_captured():
+                    for unit in self.units:
+                        if unit.team.name == "Allies" and flag.rect.colliderect(unit.rect):
+                            flag.capture(unit.team, self.player)
+                            
+            # Check for win condition
+            if all(flag.is_captured() for flag in self.flags):
+                self.state = "WIN"
+
+            # Check for lose condition
+            if not any(unit.team.name == "Allies" for unit in self.units):
+                self.state = "GAME_OVER"
 
 
     def play_menu_music(self):
@@ -278,14 +286,6 @@ class GameManager:
                 self.running = False
             for button in self.difficulty_buttons:
                 button.handle_event(event)
-
-        # Check for win condition
-        if all(flag.is_captured() for flag in self.flags):
-            self.state = "WIN"
-
-        # Check for lose condition
-        if not any(unit.team.name == "Allies" for unit in self.units):
-            self.state = "GAME_OVER"
 
     def render_menu(self):
         self.screen.fill(COLORS["white"])

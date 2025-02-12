@@ -6,8 +6,18 @@ class Unit(pygame.sprite.Sprite):
     def __init__(self, x, y, team, health=100, accuracy=80, speed=2, weapon=weapon.Pistol()):
         super().__init__()
         
-        self.tile_size = 50
+        self.tile_size = 50  # Keep a standard size
 
+        # Load and scale the original sprite
+        self.original_image = pygame.image.load("assets/sprites/soldiers_enemy.png").convert_alpha()
+        self.original_image = pygame.transform.scale(self.original_image, (self.tile_size, self.tile_size))  
+
+        # Ensure self.image starts as the scaled image
+        self.image = self.original_image.copy()
+
+
+        self.direction = pygame.Vector2(0, -1)  
+        
         rect_size = self.tile_size // 2    # Smaller rect inside the circle
         
         self.image = pygame.Surface((rect_size, rect_size), pygame.SRCALPHA)
@@ -87,7 +97,13 @@ class Unit(pygame.sprite.Sprite):
             else:
                 direction = direction.normalize() * self.speed
                 self.position += direction
+
+                # Update direction based on movement
+                if direction.length() > 0:
+                    self.direction = direction
+
             self.rect.topleft = (round(self.position.x), round(self.position.y))
+
 
     def search_and_destroy(self, enemies, obstacles, hard_obstacles, all_units):
         """ Make unit move towards the nearest enemy if it's outranged, but stop jittering. """
@@ -173,3 +189,10 @@ class Unit(pygame.sprite.Sprite):
             self.search_and_destroy(enemies, obstacles, hard_obstacles=hard_obstacles, all_units=units)
 
         self.move_towards_next_tile()
+
+        # Rotate sprite based on movement direction
+        angle = -self.direction.angle_to(pygame.Vector2(0, 1))  
+        rotated_image = pygame.transform.rotate(self.original_image, angle)
+        self.rect = rotated_image.get_rect(center=self.rect.center)  # Maintain center
+        self.image = rotated_image
+

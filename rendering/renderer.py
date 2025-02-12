@@ -35,15 +35,17 @@ class Renderer:
     def render_units(self, units, colors):
         for unit in units:
             position = self.camera.apply(unit.position)
-            # Draw the unit as a circle
+            self.screen.blit(unit.image, position)
+
+            # # Draw the unit as a circle
             unit_center = (position[0] + self.tile_size // 2, position[1] + self.tile_size // 2)
             unit_radius = self.tile_size // 3
-            pygame.draw.circle(
-                self.screen,
-                unit.team.color,
-                unit_center,
-                unit_radius
-            )
+            # pygame.draw.circle(
+            #     self.screen,
+            #     unit.team.color,
+            #     unit_center,
+            #     unit_radius
+            # )
 
             # Health bar
             health_bar_length = self.tile_size // 2
