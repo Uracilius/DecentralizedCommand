@@ -2,7 +2,7 @@ import pygame
 import random
 
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, start_pos, attacker, target_unit, speed=5, color=(255, 255, 0), radius=5, accuracy=80, enemies=[], hard_obstacles=[]):
+    def __init__(self, start_pos, attacker, target_unit, speed=15, color=(255, 255, 0), radius=5, accuracy=80, enemies=[], hard_obstacles=[], difficulty_modifier=1):
         super().__init__()
         self.image = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
         pygame.draw.circle(self.image, color, (radius, radius), radius)
@@ -18,15 +18,17 @@ class Bullet(pygame.sprite.Sprite):
             self.apply_accuracy_offset()
         else:
             self.target_pos = None
+            
 
         # Calculate direction based on adjusted target position
         direction_vector = self.target_pos - self.position if self.target_pos else pygame.math.Vector2(1, 0)
         if direction_vector.length() == 0:
             direction_vector = pygame.math.Vector2(1, 0)
-
+        self.difficulty_modifier = difficulty_modifier
         self.damage = attacker.weapon.damage
-        self.direction = direction_vector.normalize() * speed
-        self.speed = speed
+        self.speed = speed * self.difficulty_modifier
+        self.direction = direction_vector.normalize() * self.speed
+
         self.lifespan = 100
         self.color = color
         self.radius = radius

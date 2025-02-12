@@ -1,6 +1,7 @@
 import pygame
 from core import utils
 from entities import weapon
+
 class Unit(pygame.sprite.Sprite):
     def __init__(self, x, y, team, health=100, accuracy=80, speed=2, weapon=weapon.Pistol()):
         super().__init__()
@@ -19,7 +20,13 @@ class Unit(pygame.sprite.Sprite):
         self.team = team
         self.selected = False
         self.path = []
-        self.speed = speed
+        
+        
+        self.difficulty_multiplier = 1.0
+        
+        self.speed = speed * self.difficulty_multiplier
+        
+
         self.cooldown_timer = 0
         self.accuracy = accuracy*weapon.accuracy_modifier
         self.in_cover = False
@@ -28,6 +35,14 @@ class Unit(pygame.sprite.Sprite):
         self.search_timer = 0
         self.weapon = weapon
         print(f"Unit {self.team.name} initialized at {self.rect.topleft} (Expected: {self.position})")
+    
+    def update_speed(self, speed):
+        self.speed = speed * self.difficulty_multiplier
+
+    def set_difficulty_multiplier(self, multiplier):
+        self.difficulty_multiplier = multiplier
+        self.update_speed(self.speed)
+        print(f"Difficulty multiplier set to {multiplier}.")
 
     def check_cover(self, obstacles):
         self.in_cover = False
@@ -49,9 +64,9 @@ class Unit(pygame.sprite.Sprite):
             dy = self.rect.centery - attacker_position[1]
             attacker_direction = "left" if dx > 0 else "right" if abs(dx) > abs(dy) else "top" if dy > 0 else "bottom"
             if attacker_direction == self.cover_direction:
-                damage *= 0.001
+                damage *= 0.001 * self.difficulty_multiplier
                 print(f"Unit is protected by cover in direction: {self.cover_direction}, damage:{damage}")
-        self.health -= damage
+        self.health -= damage * self.difficulty_multiplier
 
     def select(self, is_selected):
         self.selected = is_selected
@@ -110,7 +125,7 @@ class Unit(pygame.sprite.Sprite):
             self.set_path(path)
 
         self.search_timer = self.search_cooldown
-
+        
 
     @staticmethod
     def move_in_formation(units, leader, destination, hard_obstacles, formation="line", spacing=50):
@@ -158,4 +173,3 @@ class Unit(pygame.sprite.Sprite):
             self.search_and_destroy(enemies, obstacles, hard_obstacles=hard_obstacles, all_units=units)
 
         self.move_towards_next_tile()
-
