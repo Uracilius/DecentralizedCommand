@@ -81,3 +81,8 @@ class Renderer:
                     (x, y, self.tile_size, self.tile_size)
                 )
 
+    def render_flags(self, flags):
+        """Render flags on the map."""
+        for flag in flags:
+            flag.render(self.screen, self.camera)
+

@@ -7,7 +7,11 @@ from core.camera import Camera
 from core import utils
 from mechanics.combat_manager import CombatManager
 import random
-# A simple Button class for the menu.
+
+class Player:
+    def __init__(self):
+        self.score = 0
+
 class Button:
     def __init__(self, rect, text, callback, font, text_color, button_color):
         self.rect = pygame.Rect(rect)
@@ -78,6 +82,7 @@ class GameManager:
         self.teams = self.map_manager.get_teams()
         self.units = self.map_manager.get_units()
         self.obstacles = self.map_manager.get_obstacles()
+        self.flags = self.map_manager.get_flags()  # Get flags from map manager
 
         self.combat_manager = CombatManager()
 
@@ -87,6 +92,10 @@ class GameManager:
         self.menu_music = pygame.mixer.Sound("assets/music/main_menu_music_1.mp3")
         self.combat_music = pygame.mixer.Sound("assets/music/combat.mp3")
         self.play_menu_music()
+
+        self.player = Player()  # Initialize player with score
+        self.flags = self.map_manager.get_flags()  # Get flags from map manager
+        print(f"Flags loaded: {self.flags}")  # Debugging print statement
 
     def play_menu_music(self):
         """Play the menu music."""
@@ -187,13 +196,20 @@ class GameManager:
             self.camera.move(self.camera.scroll_speed, 0)
 
     def update_game(self):
-        """Update game logic (combat, unit removal, etc.)"""
+        """Update game logic (combat, unit removal, flag capture, etc.)"""
         self.combat_manager.handle_combat(self.units, self.obstacles)
         self.units = [u for u in self.units if u.health > 0]
 
+        # Check for flag captures
+        for flag in self.flags:
+            if not flag.is_captured():
+                for unit in self.units:
+                    if unit.team.name == "Allies" and flag.rect.colliderect(unit.rect):
+                        flag.capture(unit.team, self.player)
+
     def render_menu(self):
         """Render the menu screen."""
-        self.screen.fill(COLORS["black"])
+        self.screen.fill(COLORS["white"])  # Set background color to white
         for button in self.menu_buttons:
             button.draw(self.screen)
         pygame.display.flip()
@@ -205,6 +221,7 @@ class GameManager:
         self.renderer.render_map(self.obstacles, COLORS)
         self.renderer.render_units(self.units, COLORS)
         self.renderer.render_bullets(self.combat_manager)
+        self.renderer.render_flags(self.flags)  # Render flags
 
         # Display the mouse coordinates for debugging.
         mouse_pos = pygame.mouse.get_pos()
