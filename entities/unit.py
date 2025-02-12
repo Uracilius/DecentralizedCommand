@@ -6,7 +6,7 @@ class Unit(pygame.sprite.Sprite):
     def __init__(self, x, y, team, health=100, accuracy=80, speed=2, weapon=weapon.Pistol()):
         super().__init__()
         
-        self.tile_size = 50  # Keep a standard size
+        self.tile_size = 50 
 
         
 
@@ -28,7 +28,7 @@ class Unit(pygame.sprite.Sprite):
             self.original_image = pygame.image.load("assets/sprites/soldiers_ally.png").convert_alpha()
         else:
             self.original_image = pygame.image.load("assets/sprites/soldiers_enemy.png").convert_alpha()
-            
+
         self.original_image = pygame.transform.scale(self.original_image, (self.tile_size, self.tile_size))  
 
         # Ensure self.image starts as the scaled image
