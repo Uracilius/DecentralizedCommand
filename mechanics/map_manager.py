@@ -59,6 +59,7 @@ class MapManager:
                     print(f"Flag created at {position}")  # Debugging print statement
                 elif char == "X":
                     self._hard_obstacles.append(HardObstacle(position))
+                    print(f"HardObstacle created at {position}")  # Debugging print statement
 
     def get_map_dimensions(self):
         return self.map_width, self.map_height

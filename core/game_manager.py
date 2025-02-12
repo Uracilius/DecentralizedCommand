@@ -250,7 +250,7 @@ class GameManager:
         """Render the gameplay screen."""
         self.screen.fill(COLORS["black"])
         self.renderer.render_ground(SCREEN_WIDTH, SCREEN_HEIGHT, COLORS)
-        self.renderer.render_map(self.obstacles, COLORS)
+        self.renderer.render_map(self.obstacles, self.hard_obstacles, COLORS)
         self.renderer.render_units(self.units, COLORS)
         self.renderer.render_bullets(self.combat_manager)
         self.renderer.render_flags(self.flags)  # Render flags

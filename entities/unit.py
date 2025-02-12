@@ -1,6 +1,8 @@
 import pygame
+import random
 from core import utils
 from entities import weapon
+
 class Unit(pygame.sprite.Sprite):
     def __init__(self, x, y, team, health=100, accuracy=80, speed=2, weapon=weapon.Pistol()):
         super().__init__()
@@ -21,12 +23,15 @@ class Unit(pygame.sprite.Sprite):
         self.path = []
         self.speed = speed
         self.cooldown_timer = 0
-        self.accuracy = accuracy*weapon.accuracy_modifier
+        self.accuracy = accuracy * weapon.accuracy_modifier
         self.in_cover = False
         self.cover_direction = None
         self.search_cooldown = 30
         self.search_timer = 0
         self.weapon = weapon
+        self.patrol_timer = 240  # 4 seconds at 60 FPS
+        self.patrol_direction = pygame.math.Vector2(random.choice([-1, 1]), random.choice([-1, 1]))
+        self.pursuing_ally = False  # Flag to indicate if the unit is pursuing an ally
         print(f"Unit {self.team.name} initialized at {self.rect.topleft} (Expected: {self.position})")
 
     def check_cover(self, obstacles):
@@ -72,7 +77,22 @@ class Unit(pygame.sprite.Sprite):
             else:
                 direction = direction.normalize() * self.speed
                 self.position += direction
+
+            # Ensure position is within map boundaries
+            self.position.x = max(0, min(self.position.x, self.tile_size * 20 - self.rect.width))
+            self.position.y = max(0, min(self.position.y, self.tile_size * 20 - self.rect.height))
+
             self.rect.topleft = (round(self.position.x), round(self.position.y))
+
+            # If the unit is at the boundary, change direction
+            if self.position.x == 0 or self.position.x == self.tile_size * 20 - self.rect.width:
+                self.patrol_direction.x *= -1
+            if self.position.y == 0 or self.position.y == self.tile_size * 20 - self.rect.height:
+                self.patrol_direction.y *= -1
+
+            # Reset pursuing_ally flag if path is completed
+            if not self.path:
+                self.pursuing_ally = False
 
     def search_and_destroy(self, enemies, obstacles, hard_obstacles, all_units):
         """ Make unit move towards the nearest enemy if it's outranged, but stop jittering. """
@@ -87,7 +107,6 @@ class Unit(pygame.sprite.Sprite):
 
         if enemy_distance <= self.weapon.range * 0.9:
             return  
-
 
         direction_to_enemy = (pygame.math.Vector2(nearest_enemy.rect.center) - self.position).normalize()
         stop_position = self.position + direction_to_enemy * (enemy_distance - self.weapon.range + 5)  # Stop just before range
@@ -111,6 +130,64 @@ class Unit(pygame.sprite.Sprite):
 
         self.search_timer = self.search_cooldown
 
+    def patrol(self, obstacles, hard_obstacles, all_units):
+        """ Patrol in a random direction and change direction every 4 seconds. """
+        if self.patrol_timer <= 0:
+            self.patrol_direction = pygame.math.Vector2(random.choice([-1, 1]), random.choice([-1, 1]))
+            self.patrol_timer = 240  # Reset patrol timer to 4 seconds
+
+        self.patrol_timer -= 1
+
+        patrol_target = self.position + self.patrol_direction * self.speed * 60  # Move in the direction for 1 second
+
+        # Ensure patrol target is within map boundaries
+        patrol_target.x = max(0, min(patrol_target.x, self.tile_size * 20 - self.rect.width))
+        patrol_target.y = max(0, min(patrol_target.y, self.tile_size * 20 - self.rect.height))
+
+        path = utils.astar_pathfinding(
+            start=self.rect.center,
+            end=patrol_target,
+            obstacles=obstacles,
+            hard_obstacles=hard_obstacles,
+            units=all_units,
+            tile_size=self.tile_size,
+            map_width=self.tile_size * 20,
+            map_height=self.tile_size * 20
+        )
+
+        if not path:
+            self.position += self.patrol_direction * self.speed
+            self.rect.topleft = (round(self.position.x), round(self.position.y))
+        else:
+            self.set_path(path)
+
+    def detect_allies(self, allies):
+        """ Detect allies within a range of 600 units and move towards them. """
+        for ally in allies:
+            distance = pygame.math.Vector2(self.rect.center).distance_to(ally.rect.center)
+            if distance <= 600:
+                direction_to_ally = (pygame.math.Vector2(ally.rect.center) - self.position).normalize()
+                stop_position = pygame.math.Vector2(ally.rect.center) - direction_to_ally * (self.weapon.range * 0.9)
+
+                # Ensure stop position is within map boundaries
+                stop_position.x = max(0, min(stop_position.x, self.tile_size * 20 - self.rect.width))
+                stop_position.y = max(0, min(stop_position.y, self.tile_size * 20 - self.rect.height))
+
+                path = utils.astar_pathfinding(
+                    start=self.rect.center,
+                    end=stop_position,
+                    obstacles=[],
+                    hard_obstacles=[],
+                    units=[],
+                    tile_size=self.tile_size,
+                    map_width=self.tile_size * 20,
+                    map_height=self.tile_size * 20
+                )
+
+                if path:
+                    self.set_path(path)
+                    self.pursuing_ally = True
+                return
 
     @staticmethod
     def move_in_formation(units, leader, destination, hard_obstacles, formation="line", spacing=50):
@@ -155,7 +232,12 @@ class Unit(pygame.sprite.Sprite):
             self.move_towards_next_tile()
             self.check_cover(obstacles)
         else:
-            self.search_and_destroy(enemies, obstacles, hard_obstacles=hard_obstacles, all_units=units)
+            if self.team.name == "Enemies":
+                self.detect_allies([u for u in units if u.team.name == "Allies"])
+                if not self.pursuing_ally:
+                    self.patrol(obstacles, hard_obstacles, units)
+            else:
+                self.search_and_destroy(enemies, obstacles, hard_obstacles=hard_obstacles, all_units=units)
 
         self.move_towards_next_tile()
 
